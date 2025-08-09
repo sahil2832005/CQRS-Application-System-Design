@@ -4,8 +4,9 @@
 
 const createUser = require('../commands/createUser');
 const updateUser = require('../commands/updateUser');
+const deleteUser = require('../commands/deleteUser');
 const { getUserById } = require('../queries/getUser');
-const { listUsers } = require('../queries/listUsers');
+const { listUsers, searchUsers } = require('../queries/listUsers');
 const { authenticateUser } = require('../utils/auth');
 
 // Controller methods
@@ -106,6 +107,52 @@ const userController = {
       });
     } catch (error) {
       return res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
+
+  // Search users (admin only)
+  searchUsers: async (req, res) => {
+    try {
+      const { query } = req.query;
+      
+      if (!query) {
+        return res.status(400).json({
+          success: false,
+          message: 'Search query is required'
+        });
+      }
+      
+      const users = await searchUsers(query);
+      
+      return res.status(200).json({
+        success: true,
+        data: users,
+        message: 'Users search completed'
+      });
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
+  
+  // Delete user (admin only)
+  deleteUser: async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      await deleteUser(userId);
+      
+      return res.status(200).json({
+        success: true,
+        message: 'User deleted successfully'
+      });
+    } catch (error) {
+      return res.status(400).json({
         success: false,
         message: error.message
       });

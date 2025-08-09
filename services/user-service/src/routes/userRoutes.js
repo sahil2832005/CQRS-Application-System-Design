@@ -18,5 +18,7 @@ router.put('/profile', authenticate, userController.updateProfile);
 
 // Admin routes
 router.get('/', authenticate, isAdmin, userController.listUsers);
+router.get('/search', authenticate, isAdmin, userController.searchUsers);
+router.delete('/:userId', authenticate, isAdmin, userController.deleteUser);
 
 module.exports = router;

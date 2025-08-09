@@ -3,6 +3,7 @@
  */
 
 const User = require('../models/user');
+const userReadModel = require('../queries/userReadModel');
 
 /**
  * Command handler for creating a new user
@@ -22,8 +23,14 @@ const createUser = async (userData) => {
     const user = new User(userData);
     await user.save();
     
+    // Get the user as plain object
+    const userObj = user.toJSON();
+    
+    // Sync with read model (Redis cache)
+    await userReadModel.handleUserCreated(userObj);
+    
     // Return user without sensitive data
-    return user.toJSON();
+    return userObj;
   } catch (error) {
     throw error;
   }

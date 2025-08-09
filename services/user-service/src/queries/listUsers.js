@@ -2,7 +2,7 @@
  * List users query - CQRS query for listing users
  */
 
-const User = require('../models/user');
+const userReadModel = require('./userReadModel');
 
 /**
  * Query handler for listing users with pagination
@@ -11,39 +11,27 @@ const User = require('../models/user');
  */
 const listUsers = async (options = {}) => {
   try {
-    const { 
-      page = 1, 
-      limit = 10, 
-      sortBy = 'createdAt', 
-      sortOrder = 'desc',
-      filter = {}
-    } = options;
-    
-    // Create sort config
-    const sort = {};
-    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
-    
-    // Count total users for pagination
-    const total = await User.countDocuments(filter);
-    
-    // Find users with pagination
-    const users = await User.find(filter)
-      .sort(sort)
-      .limit(Number(limit))
-      .skip((Number(page) - 1) * Number(limit));
-    
-    return {
-      users: users.map(user => user.toJSON()),
-      pagination: {
-        total,
-        page: Number(page),
-        limit: Number(limit),
-        pages: Math.ceil(total / Number(limit))
-      }
-    };
+    // Use the read model, which implements caching
+    return await userReadModel.listUsers(options);
   } catch (error) {
     throw error;
   }
 };
 
-module.exports = { listUsers };
+/**
+ * Query handler for searching users
+ * @param {String} query Search query string
+ * @returns {Promise<Array>} Array of matching users
+ */
+const searchUsers = async (query) => {
+  try {
+    return await userReadModel.searchUsers(query);
+  } catch (error) {
+    throw error;
+  }
+};
+
+module.exports = { 
+  listUsers,
+  searchUsers
+};

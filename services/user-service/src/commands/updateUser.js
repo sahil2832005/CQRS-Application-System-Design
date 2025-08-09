@@ -3,6 +3,7 @@
  */
 
 const User = require('../models/user');
+const userReadModel = require('../queries/userReadModel');
 
 /**
  * Command handler for updating a user
@@ -28,7 +29,12 @@ const updateUser = async (userId, updateData) => {
       throw new Error('User not found');
     }
     
-    return user.toJSON();
+    const userObj = user.toJSON();
+    
+    // Sync with read model (Redis cache)
+    await userReadModel.handleUserUpdated(userObj);
+    
+    return userObj;
   } catch (error) {
     throw error;
   }

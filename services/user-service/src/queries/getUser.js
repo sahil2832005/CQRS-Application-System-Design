@@ -2,7 +2,7 @@
  * Get user query - CQRS query for fetching user
  */
 
-const User = require('../models/user');
+const userReadModel = require('./userReadModel');
 
 /**
  * Query handler for getting a user by ID
@@ -11,13 +11,8 @@ const User = require('../models/user');
  */
 const getUserById = async (userId) => {
   try {
-    const user = await User.findById(userId);
-    
-    if (!user) {
-      throw new Error('User not found');
-    }
-    
-    return user.toJSON();
+    // Use the read model, which implements caching
+    return await userReadModel.getUserById(userId);
   } catch (error) {
     throw error;
   }

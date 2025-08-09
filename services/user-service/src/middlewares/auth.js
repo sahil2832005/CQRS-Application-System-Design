@@ -9,10 +9,13 @@ const User = require('../models/user');
 // Middleware to authenticate JWT token
 const authenticate = async (req, res, next) => {
   try {
+    console.log('Authentication middleware - checking token');
+    
     // Get token from header
     const authHeader = req.header('Authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('Authentication failed: No Bearer token provided');
       return res.status(401).json({
         success: false,
         message: 'Authentication token is required'
@@ -20,27 +23,58 @@ const authenticate = async (req, res, next) => {
     }
     
     const token = authHeader.replace('Bearer ', '');
+    console.log(`Token received: ${token.substring(0, 15)}...`);
     
     // Verify token
-    const decoded = jwt.verify(token, config.JWT_SECRET);
-    
-    // Find user
-    const user = await User.findById(decoded.id);
-    
-    if (!user || !user.isActive) {
+    let decoded;
+    try {
+      decoded = jwt.verify(token, config.JWT_SECRET);
+      console.log('Token verified successfully');
+    } catch (jwtError) {
+      console.error('JWT verification error:', jwtError.message);
       return res.status(401).json({
         success: false,
-        message: 'User not found or inactive'
+        message: `Invalid token: ${jwtError.message}`
       });
     }
     
-    // Attach user to request
-    req.user = decoded;
-    next();
+    // Find user
+    try {
+      const user = await User.findById(decoded.id);
+      
+      if (!user) {
+        console.log(`User not found: ${decoded.id}`);
+        return res.status(401).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+      
+      if (!user.isActive) {
+        console.log(`User inactive: ${decoded.id}`);
+        return res.status(401).json({
+          success: false,
+          message: 'User is inactive'
+        });
+      }
+      
+      console.log(`User authenticated: ${decoded.id}, role: ${decoded.role}`);
+      
+      // Attach user to request
+      req.user = decoded;
+      next();
+    } catch (dbError) {
+      console.error('Database error during authentication:', dbError);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error during authentication'
+      });
+    }
   } catch (error) {
+    console.error('Authentication middleware error:', error);
     return res.status(401).json({
       success: false,
-      message: 'Invalid token'
+      message: 'Authentication failed'
     });
   }
 };
